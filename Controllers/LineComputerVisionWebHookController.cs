@@ -26,23 +26,29 @@ namespace isRock.Template
                 this.ChannelAccessToken = "_____________ChannelAccessToken___________________";
                 //配合Line Verify
                 if (ReceivedMessage.events == null || ReceivedMessage.events.Count() <= 0 ||
-                    ReceivedMessage.events.FirstOrDefault().replyToken == "00000000000000000000000000000000") return Ok();
+                    ReceivedMessage.events.FirstOrDefault()?.replyToken == "00000000000000000000000000000000") return Ok();
                 //取得Line Event
                 var LineEvent = this.ReceivedMessage.events.FirstOrDefault();
                 var responseMsg = "";
                 //準備回覆訊息
-                if (LineEvent.type.ToLower() == "message" && LineEvent.message.type == "image")
+                if (LineEvent != null && LineEvent.type.ToLower() == "message" && LineEvent.message.type == "image")
                 {
                     var Bytes = this.GetUserUploadedContent(LineEvent.message.id);
                     var ret = MakeRequest(endpoint, key, Bytes);
-                    responseMsg = $"captions : {ret.description.captions[0].text} \n JSON: {ret}";
+                    if (ret?.description?.captions?.Count > 0)
+                        responseMsg = $"captions : {ret.description.captions[0].text} \n JSON: {ret}";
+                    else
+                        responseMsg = $"無法辨識影像 \n JSON: {ret}";
                 }
-                else if (LineEvent.type.ToLower() == "message")
+                else if (LineEvent != null && LineEvent.type.ToLower() == "message")
                     responseMsg = $"收到 event : {LineEvent.type} type: {LineEvent.message.type} ";
-                else
+                else if (LineEvent != null)
                     responseMsg = $"收到 event : {LineEvent.type} ";
                 //回覆訊息
-                this.ReplyMessage(LineEvent.replyToken, responseMsg);
+                if (LineEvent != null)
+                {
+                    this.ReplyMessage(LineEvent.replyToken, responseMsg);
+                }
                 //response OK
                 return Ok();
             }
@@ -55,7 +61,7 @@ namespace isRock.Template
             }
         }
 
-        static dynamic MakeRequest(string endpoint, string subscriptionKey, byte[] byteData)
+        static dynamic? MakeRequest(string endpoint, string subscriptionKey, byte[] byteData)
         {
             HttpClient client = new HttpClient();
             string uriBase = endpoint + "vision/v2.1/analyze";

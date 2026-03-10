@@ -25,7 +25,7 @@ namespace isRock.Template
         }
 
         // 讀取快取資料
-        public object GetCache(string key)
+        public object? GetCache(string key)
         {
             _memoryCache.TryGetValue(key, out var value);
             return value;

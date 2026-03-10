@@ -46,7 +46,7 @@ namespace isRock.Template
                 this.ChannelAccessToken = channelAccessToken;
                 //配合Line Verify
                 if (ReceivedMessage.events == null || ReceivedMessage.events.Count() <= 0 ||
-                    ReceivedMessage.events.FirstOrDefault().replyToken == "00000000000000000000000000000000") return Ok();
+                    ReceivedMessage.events.FirstOrDefault()?.replyToken == "00000000000000000000000000000000") return Ok();
                 //取得Line Event
                 var LineEvent = this.ReceivedMessage.events.FirstOrDefault();
 
@@ -75,17 +75,25 @@ namespace isRock.Template
                             user = LineEvent.source.userId //👉取得使用者ID
                         };
                         var response = Dify.CallDifyChatMessagesAPI(DifyAPIKey, requestData);
-                        responseMsg = response.answer;
+                        responseMsg = response?.answer ?? "無法取得回應";
                         //儲存對話ID(to cache)
-                        _cacheService.SetCache(LineEvent.source.userId, response.conversation_id);
+                        if (response?.conversation_id != null)
+                            _cacheService.SetCache(LineEvent.source.userId, response.conversation_id);
                     }
                 }
                 else if (LineEvent != null && LineEvent.type.ToLower() == "message")
                     responseMsg = $"收到 event : {LineEvent.type} type: {LineEvent.message.type} ";
-                else
+                else if (LineEvent != null)
                     responseMsg = $"收到 event : {LineEvent.type} ";
                 //回覆訊息
-                this.ReplyMessage(LineEvent.replyToken, responseMsg);
+                if (LineEvent != null)
+                {
+                    this.ReplyMessage(LineEvent.replyToken, responseMsg);
+                }
+                else
+                {
+                    this.ReplyMessage("", responseMsg);
+                }
                 //response OK
                 return Ok();
             }

@@ -17,6 +17,7 @@ namespace isRock.Template
 
         [Route("api/TranslatorBot")]
         [HttpPost]
+#pragma warning disable CS8602
         public IActionResult POST()
         {
             var AdminUserId = "_______U5e60294b8c__AdminUserId__02d6295b621a_____";
@@ -27,26 +28,41 @@ namespace isRock.Template
                 this.ChannelAccessToken = "_____________ChannelAccessToken___________________";
                 //配合Line Verify
                 if (ReceivedMessage.events == null || ReceivedMessage.events.Count() <= 0 ||
-                    ReceivedMessage.events.FirstOrDefault().replyToken == "00000000000000000000000000000000") return Ok();
+                    ReceivedMessage.events.FirstOrDefault()?.replyToken == "00000000000000000000000000000000") return Ok();
                 //取得Line Event
                 var LineEvent = this.ReceivedMessage.events.FirstOrDefault();
                 var responseMsg = "";
                 //準備回覆訊息
-                if (LineEvent.type.ToLower() == "message" && LineEvent.message.type == "text")
+                if (LineEvent != null && LineEvent.type.ToLower() == "message" && LineEvent.message.type == "text")
                 {
                     var ret = MakeTranslator(LineEvent.message.text);
                     responseMsg = $"您說了 {LineEvent.message.text}";
-                    foreach (var item in ret[0].translations)
+                    if (ret != null && ret.Length > 0 && ret[0] != null && ret[0].translations != null)
                     {
-                        responseMsg += $"\n 翻譯成 {item.to} --> {item.text}";
+                        foreach (var item in ret[0].translations)
+                        {
+                            try
+                            {
+#pragma warning disable CS8602
+                                var toLanguage = item?.to ?? "";
+                                var translatedText = item?.text ?? "";
+#pragma warning restore CS8602
+                                if (!string.IsNullOrEmpty(toLanguage) && !string.IsNullOrEmpty(translatedText))
+                                    responseMsg += $"\n 翻譯成 {toLanguage} --> {translatedText}";
+                            }
+                            catch { }
+                        }
                     }
                 }
-                else if (LineEvent.type.ToLower() == "message")
+                else if (LineEvent != null && LineEvent.type.ToLower() == "message")
                     responseMsg = $"收到 event : {LineEvent.type} type: {LineEvent.message.type} ";
-                else
+                else if (LineEvent != null)
                     responseMsg = $"收到 event : {LineEvent.type} ";
                 //回覆訊息
-                this.ReplyMessage(LineEvent.replyToken, responseMsg);
+                if (LineEvent != null)
+                {
+                    this.ReplyMessage(LineEvent.replyToken, responseMsg);
+                }
                 //response OK
                 return Ok();
             }
@@ -57,10 +73,12 @@ namespace isRock.Template
                 //response OK
                 return Ok();
             }
+#pragma warning restore CS8602
         }
 
-        static dynamic MakeTranslator(string msg)
+        static dynamic? MakeTranslator(string msg)
         {
+#pragma warning disable CS8602
             HttpClient client = new HttpClient();
             string uri = endpoint + "/translate?api-version=3.0&to=ja&to=en&to=ko";
 
@@ -76,6 +94,7 @@ namespace isRock.Template
             var response = client.PostAsync(uri, content).Result;
             var JSON = response.Content.ReadAsStringAsync().Result;
             return Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(JSON);
+#pragma warning restore CS8602
         }
     }
 }

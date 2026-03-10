@@ -27,11 +27,11 @@ namespace isRock.Template
                 this.ChannelAccessToken = channelAccessToken;
                 //配合Line Verify
                 if (ReceivedMessage.events == null || ReceivedMessage.events.Count() <= 0 ||
-                    ReceivedMessage.events.FirstOrDefault().replyToken == "00000000000000000000000000000000") return Ok();
+                    ReceivedMessage.events.FirstOrDefault()?.replyToken == "00000000000000000000000000000000") return Ok();
                 //取得Line Event(範例，只取第一個)
                 var LineEvent = this.ReceivedMessage.events.FirstOrDefault();
                 //回覆訊息
-                if (LineEvent.type == "message")
+                if (LineEvent != null && LineEvent.type == "message")
                 {
                     if (LineEvent.message.type == "text") //收到文字
                     {
@@ -39,14 +39,15 @@ namespace isRock.Template
                         var helper = new isRock.MsQnAMaker.Client(
                             new Uri(QnAEndpoint), QnAKey);
                         var QnAResponse = helper.GetResponse(LineEvent.message.text.Trim());
-                        var ret = (from c in QnAResponse.answers
+                        var ret = (from c in QnAResponse?.answers ?? new List<isRock.MsQnAMaker.Answer>()
                                    orderby c.score descending
                                    select c
                                 ).Take(1);
 
                         var responseText = UnknowAnswer;
-                        if (!string.IsNullOrEmpty(ret.FirstOrDefault().answer))
-                            responseText = ret.FirstOrDefault().answer;
+                        var firstAnswer = ret.FirstOrDefault();
+                        if (firstAnswer != null && !string.IsNullOrEmpty(firstAnswer.answer))
+                            responseText = firstAnswer.answer;
                         //回覆
                         this.ReplyMessage(LineEvent.replyToken, responseText);
                     }

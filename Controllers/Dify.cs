@@ -5,7 +5,7 @@ namespace isRock.Template
 {
     public class Dify
     {
-        public static dynamic CallDifyChatMessagesAPI(string apiKey, object requestData)
+        public static dynamic? CallDifyChatMessagesAPI(string apiKey, object requestData)
         {
             var client = new HttpClient();
 

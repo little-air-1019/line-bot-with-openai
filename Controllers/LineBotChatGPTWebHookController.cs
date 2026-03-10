@@ -25,21 +25,24 @@ namespace isRock.Template
                 this.ChannelAccessToken = "👉_______ChannelAccessToken________"; //👉repleace it with your Channel Access Token
                 //配合Line Verify
                 if (ReceivedMessage.events == null || ReceivedMessage.events.Count() <= 0 ||
-                    ReceivedMessage.events.FirstOrDefault().replyToken == "00000000000000000000000000000000") return Ok();
+                    ReceivedMessage.events.FirstOrDefault()?.replyToken == "00000000000000000000000000000000") return Ok();
                 //取得Line Event
                 var LineEvent = this.ReceivedMessage.events.FirstOrDefault();
                 var responseMsg = "";
                 //準備回覆訊息
-                if (LineEvent.type.ToLower() == "message" && LineEvent.message.type == "text")
+                if (LineEvent != null)
                 {
-                    responseMsg = ChatGPT.getResponseFromGPT(LineEvent.message.text);
+                    if (LineEvent.type.ToLower() == "message" && LineEvent.message.type == "text")
+                    {
+                        responseMsg = ChatGPT.getResponseFromGPT(LineEvent.message.text);
+                    }
+                    else if (LineEvent.type.ToLower() == "message")
+                        responseMsg = $"收到 event : {LineEvent.type} type: {LineEvent.message.type} ";
+                    else
+                        responseMsg = $"收到 event : {LineEvent.type} ";
+                    //回覆訊息
+                    this.ReplyMessage(LineEvent.replyToken, responseMsg);
                 }
-                else if (LineEvent.type.ToLower() == "message")
-                    responseMsg = $"收到 event : {LineEvent.type} type: {LineEvent.message.type} ";
-                else
-                    responseMsg = $"收到 event : {LineEvent.type} ";
-                //回覆訊息
-                this.ReplyMessage(LineEvent.replyToken, responseMsg);
                 //response OK
                 return Ok();
             }
@@ -61,7 +64,7 @@ namespace isRock.Template
         const string AzureOpenAIVersion = "2023-03-15-preview";  //👉replace  it with your Azure OpenAI API Version
 
         [JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
-        public enum role
+        public enum Role
         {
             assistant, user, system
         }
@@ -89,7 +92,7 @@ namespace isRock.Template
                 throw new System.Exception($"API回應錯誤：{responseContent}");
             // Json to Object
             var obj = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(responseContent);
-            return obj.choices[0].message.content.Value;
+            return obj?.choices[0]?.message?.content?.Value ?? string.Empty;
         }
 
         public static string CallOpenAIChatAPI(string apiKey, object requestData)
@@ -111,7 +114,7 @@ namespace isRock.Template
             // 取得 HTTP response 內容
             var responseContent = response.Content.ReadAsStringAsync().Result;
             var obj = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(responseContent);
-            return obj.choices[0].message.content.Value;
+            return obj?.choices[0]?.message?.content?.Value ?? string.Empty;
         }
 
 
@@ -126,7 +129,7 @@ namespace isRock.Template
                     messages = new[]
                     {
                         new {
-                            role = ChatGPT.role.system ,
+                            role = ChatGPT.Role.system ,
                             content = @"
                                 假設你是一個專業的客戶服務人員，對於客戶非常有禮貌、也能夠安撫客戶的抱怨情緒、
                                 盡量讓客戶感到被尊重、竭盡所能的回覆客戶的疑問。
@@ -143,7 +146,7 @@ namespace isRock.Template
 "
                         },
                         new {
-                             role = ChatGPT.role.user,
+                             role = ChatGPT.Role.user,
                              content = Message
                         },
                     }
