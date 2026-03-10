@@ -1,0 +1,6 @@
+@line_bot_with_openai_HostAddress = http://localhost:5149
+
+GET {{line_bot_with_openai_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
